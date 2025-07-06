@@ -34,14 +34,35 @@ type Channel = {
   node_right?: any;
 };
 
-// Read config from environment variables (with fallbacks)
-const CHANNELS_GEO_API = import.meta.env.CHANNELS_GEO_API || "https://mempool.space/api/v1/lightning/channels-geo";
-const DEBUG_LIGHTNING = (import.meta.env.DEBUG_LIGHTNING_ANIM || "false") === "true";
-const POLL_INTERVAL = (parseInt(import.meta.env.POLL_INTERVAL || "10", 10)) * 1000;
-const MAX_CHANNEL_EVENTS = parseInt(import.meta.env.MAX_CHANNEL_EVENTS || "30", 10);
-const ANIMATION_DURATION = (parseInt(import.meta.env.ANIMATION_DURATION || "60", 10)) * 1000;
+// Config loader
+export type AppConfig = {
+  CHANNELS_GEO_API: string;
+  CHANNEL_METADATA_API: string;
+  DEBUG_LIGHTNING_ANIM: boolean;
+  POLL_INTERVAL: number;
+  MAX_CHANNEL_EVENTS: number;
+  ANIMATION_DURATION: number;
+};
 
+const defaultConfig: AppConfig = {
+  CHANNELS_GEO_API: "https://mempool.space/api/v1/lightning/channels-geo",
+  CHANNEL_METADATA_API: "https://mempool.space/api/v1/lightning/channels/",
+  DEBUG_LIGHTNING_ANIM: false,
+  POLL_INTERVAL: 10,
+  MAX_CHANNEL_EVENTS: 30,
+  ANIMATION_DURATION: 60,
+};
+
+function loadConfig(): Promise<AppConfig> {
+  const configUrl = `${import.meta.env.BASE_URL}config.json`;
+  return fetch(configUrl)
+    .then((res) => res.ok ? res.json() : defaultConfig)
+    .then((cfg) => ({ ...defaultConfig, ...cfg }));
+}
+
+// Read config from environment variables (with fallbacks)
 const App: React.FC = () => {
+  const [config, setConfig] = useState<AppConfig | null>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [channels, setChannels] = useState<Channel[]>([]);
   const [zapChannelId, setZapChannelId] = useState<string | undefined>(); // Will remove this if not used
@@ -70,6 +91,10 @@ const App: React.FC = () => {
   // Fetch and process LN channels with geodata and metadata
   async function fetchChannelsGeo() {
     try {
+      if (!CHANNELS_GEO_API) {
+        log(`[API] CHANNELS_GEO_API is not defined, skipping fetch.`);
+        return;
+      }
       log(`[API] Fetching Lightning Network channels with geodata from: ${CHANNELS_GEO_API}`);
       const res = await fetch(CHANNELS_GEO_API);
       if (!res.ok) {
@@ -167,11 +192,23 @@ const App: React.FC = () => {
 
   // Poll every POLL_INTERVAL ms
   useEffect(() => {
-    fetchChannelsGeo();
+    loadConfig().then(setConfig);
+  }, []);
+
+  // Use config values instead of import.meta.env
+  const CHANNELS_GEO_API = config?.CHANNELS_GEO_API;
+  const DEBUG_LIGHTNING = config?.DEBUG_LIGHTNING_ANIM;
+  const POLL_INTERVAL = config?.POLL_INTERVAL ? config.POLL_INTERVAL * 1000 : 10000;
+  const MAX_CHANNEL_EVENTS = config?.MAX_CHANNEL_EVENTS ?? 30;
+  const ANIMATION_DURATION = config?.ANIMATION_DURATION ? config.ANIMATION_DURATION * 1000 : 60000;
+
+  // Poll Lightning Network channels at configured interval
+  useEffect(() => {
+    if (!config) return;
+    fetchChannelsGeo(); // Initial fetch
     const interval = setInterval(fetchChannelsGeo, POLL_INTERVAL);
     return () => clearInterval(interval);
-    // eslint-disable-next-line
-  }, []);
+  }, [config, POLL_INTERVAL]);
 
   // Debug random lightning poller
   useEffect(() => {
@@ -181,9 +218,17 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [DEBUG_LIGHTNING, debugRandomOn]);
 
+  if (!config) {
+    return (
+      <div style={{color:'#ffe066',background:'#181a20',height:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        Loading config...
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: "100vw", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", background: "#181a20", color: "#ffe066" }}>
-      <h2 style={{ width: "100%", maxWidth: 1600, margin: "0 auto", color: "#ffe066" }}>Lightning Network Graph</h2>
+      <h2 style={{ width: "100%", maxWidth: 1600, margin: "0 auto", color: "#ffe066" }}>Lightning Network Graph (GEO-Based nodes)</h2>
       <div style={{ width: "100%", maxWidth: 1920 }}>
         <LightningGraph
           nodes={nodes}
@@ -272,12 +317,10 @@ Features:
 - Supports debug lightning animation for development
 - Provides event logs and UI controls for toggling logs and channel visibility
 
-Environment variables (with defaults):
-  VITE_CHANNELS_GEO_API: API endpoint for channel geodata
-  VITE_CHANNEL_METADATA_API: API endpoint for channel metadata
-  VITE_DEBUG_LIGHTNING_ANIM: Enable debug lightning animation (true/false)
-  VITE_POLL_INTERVAL: Polling interval for API (ms)
-  VITE_MAX_CHANNEL_EVENTS: Max number of channel events to keep in memory
+Runtime configuration:
+  All runtime configuration is loaded from public/config.json at app startup.
+  To change configuration (API endpoints, polling interval, etc.), edit public/config.json and redeploy.
+  .env or VITE_ environment variables are not used for runtime configuration.
 
 Author: Jossec101
 Date: 2025-07-06

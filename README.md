@@ -38,16 +38,24 @@ npm run preview
 ```
 
 ## Configuration
-You can override settings in the `.env` file:
 
+All runtime configuration is loaded from `public/config.json` at app startup.  
+To change API endpoints, polling interval, animation duration, or other settings, edit `public/config.json` and redeploy.  
+You do **not** need to rebuild the app to change configuration.
+
+Example `public/config.json`:
+```json
+{
+  "CHANNELS_GEO_API": "https://mempool.space/api/v1/lightning/channels-geo",
+  "CHANNEL_METADATA_API": "https://mempool.space/api/v1/lightning/channels/",
+  "DEBUG_LIGHTNING_ANIM": false,
+  "POLL_INTERVAL": 10,
+  "MAX_CHANNEL_EVENTS": 10000,
+  "ANIMATION_DURATION": 60
+}
 ```
-CHANNELS_GEO_API=https://mempool.space/api/v1/lightning/channels-geo
-CHANNEL_METADATA_API=https://mempool.space/api/v1/lightning/channels/
-DEBUG_LIGHTNING_ANIM=false
-POLL_INTERVAL=10
-MAX_CHANNEL_EVENTS=10000
-ANIMATION_DURATION=60
-```
+
+> **Note:** The `.env` file is only used for build-time configuration (e.g., Vite settings) and is not used for runtime configuration.
 
 ## Project Structure
 ```

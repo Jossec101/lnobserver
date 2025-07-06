@@ -17,6 +17,8 @@
 //   channelEventId: Optional channel id to animate a lightning effect
 //   channelEvents: Optional array of recent channel events to animate
 //   triggerDebugLightning: Optional number to trigger a random lightning animation
+//   maxChannelEvents: Maximum number of channel events to animate
+//   animationDuration: Duration of the animation for channel events
 //
 // Author: Jossec101
 // Date: (2025-07-06)
@@ -47,20 +49,22 @@ type Props = {
   onChannelEvent?: (channel: Channel) => void;
   channelEventId?: string;
   channelEvents?: ChannelEvent[];
+  triggerDebugLightning?: number;
+  maxChannelEvents: number;
+  animationDuration: number;
 };
 
 const worldMapUrl =
   "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-const LightningGraph: React.FC<Props & { triggerDebugLightning?: number }> = ({
+const LightningGraph: React.FC<Props> = ({
   nodes,
   channels,
   channelEventId,
   triggerDebugLightning,
   channelEvents = [],
-  // Accept animation config as props (optional, fallback to defaults)
-  maxChannelEvents = 30,
-  animationDuration = 60000,
+  maxChannelEvents,
+  animationDuration,
 }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [world, setWorld] = useState<any>(null);
@@ -193,7 +197,7 @@ const LightningGraph: React.FC<Props & { triggerDebugLightning?: number }> = ({
     function playLightningSound() {
       const now = Date.now();
       if (now - lastSoundTimeRef.current > 1000) { // 1 second cooldown
-        const audio = new Audio("/lightning.mp3");
+        const audio = new Audio(`${import.meta.env.BASE_URL}lightning.mp3`);
         audio.volume = 0.5;
         audio.play().catch(() => {}); // Ignore audio play errors
         lastSoundTimeRef.current = now;
@@ -234,7 +238,7 @@ const LightningGraph: React.FC<Props & { triggerDebugLightning?: number }> = ({
             .attr("class", "lightning-anim")
             .attr("filter", "url(#glow)")
             .transition()
-            .duration(animationDuration)
+            .duration(60000)
             .style("opacity", 0)
             .remove();
           didDebug = true;
@@ -276,7 +280,7 @@ const LightningGraph: React.FC<Props & { triggerDebugLightning?: number }> = ({
           .attr("class", "lightning-anim")
           .attr("filter", "url(#glow)")
           .transition()
-          .duration(animationDuration)
+          .duration(60000)
           .style("opacity", 0)
           .remove();
       }
@@ -328,7 +332,7 @@ const LightningGraph: React.FC<Props & { triggerDebugLightning?: number }> = ({
         }
       });
     }
-  }, [nodes, channels, channelEventId, world, dimensions, triggerDebugLightning, channelEvents, maxChannelEvents, animationDuration]);
+  }, [nodes, channels, channelEventId, world, dimensions, triggerDebugLightning, channelEvents]);
 
   // Add SVG filter for glow effect (must be top-level, not inside another useEffect)
   useEffect(() => {

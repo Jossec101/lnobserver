@@ -1,0 +1,8 @@
+{
+  "CHANNELS_GEO_API": "https://mempool.space/api/v1/lightning/channels-geo",
+  "CHANNEL_METADATA_API": "https://mempool.space/api/v1/lightning/channels/",
+  "DEBUG_LIGHTNING_ANIM": false,
+  "POLL_INTERVAL": 10,
+  "MAX_CHANNEL_EVENTS": 10000,
+  "ANIMATION_DURATION": 60
+}
