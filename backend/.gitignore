@@ -1,0 +1,19 @@
+# Rust/Cargo
+/target/
+**/*.rs.bk
+**/*.swp
+Cargo.lock
+# Ignore by default, but keep for binaries
+!Cargo.lock
+
+# IDEs and editors
+/.idea/
+/.vscode/
+/*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
